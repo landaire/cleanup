@@ -2,7 +2,7 @@ use atomic::AtomicUsize;
 
 use rayon::{prelude::*, Scope};
 use sha1::{Digest, Sha1};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Result;
 use std::path::PathBuf;
@@ -29,7 +29,7 @@ fn main() -> Result<()> {
 
     println!(
         "Deleted {} files",
-        deleted_count.load(atomic::Ordering::Acquire)
+        deleted_count.load(atomic::Ordering::Relaxed)
     );
 
     Ok(())
@@ -64,7 +64,7 @@ fn process_directory<'a, 'b>(
         // which in this case ivalent to [u8; 20]
         let result = hasher.finalize();
         if hashes.read().unwrap().contains(&result) {
-            deleted_file_count.fetch_add(1, atomic::Ordering::AcqRel);
+            deleted_file_count.fetch_add(1, atomic::Ordering::Relaxed);
             fs::remove_file(&path).expect("failed to remove file");
         } else {
             hashes.write().unwrap().insert(result);
