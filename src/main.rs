@@ -80,6 +80,8 @@ fn process_directory<'a, 'b>(
 
             if !is_dry_run {
                 fs::remove_file(&path).expect("failed to remove file");
+            } else {
+                eprintln!("{:?} is a duplicate", path);
             }
         } else {
             hashes.write().unwrap().insert(result);
