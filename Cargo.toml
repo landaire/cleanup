@@ -3,6 +3,8 @@ name = "cleanup"
 version = "0.1.0"
 authors = ["Lander Brandt <landerbrandt@gmail.com>"]
 edition = "2018"
+readme = "README.txt"
+repository = "https://github.com/landaire/cleanup"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
