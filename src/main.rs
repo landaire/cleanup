@@ -10,7 +10,7 @@ use std::sync::{atomic, RwLock};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
-#[structopt(name = "cleanup", about = "Recurisvely find and remove duplicate files in a target directory")]
+#[structopt(name = "cleanup", about = "Recursively find and remove duplicate files in a target directory")]
 struct Opt {
     /// Do a dry run
     #[structopt(long = "dry")]

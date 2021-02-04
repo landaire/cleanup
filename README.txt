@@ -1,5 +1,5 @@
 cleanup 0.1.0
-Recurisvely find and remove duplicate files in a target directory
+Recursively find and remove duplicate files in a target directory
 
 USAGE:
     cleanup [FLAGS] <input>
