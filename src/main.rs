@@ -1,12 +1,12 @@
 use atomic::AtomicUsize;
-use fs::remove_file;
+
 use rayon::{prelude::*, Scope};
 use sha1::{Digest, Sha1};
 use std::collections::HashSet;
+use std::fs;
 use std::io::Result;
-use std::path::{Path, PathBuf};
-use std::sync::{atomic, mpsc, Mutex, RwLock};
-use std::{fs, thread::current};
+use std::path::PathBuf;
+use std::sync::{atomic, RwLock};
 use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
