@@ -1,10 +1,12 @@
 [package]
-name = "cleanup"
+name = "cleanup-cli"
 version = "0.1.0"
 authors = ["Lander Brandt <landerbrandt@gmail.com>"]
 edition = "2018"
 readme = "README.txt"
 repository = "https://github.com/landaire/cleanup"
+description = "Recurisvely find and remove duplicate files in a target directory"
+license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,3 +14,7 @@ repository = "https://github.com/landaire/cleanup"
 structopt = "0.3"
 sha-1 = "0.9.3"
 rayon = "1.5"
+
+[[bin]]
+name = "cleanup"
+path = "src/main.rs"

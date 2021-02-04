@@ -63,7 +63,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "cleanup"
+name = "cleanup-cli"
 version = "0.1.0"
 dependencies = [
  "rayon",
