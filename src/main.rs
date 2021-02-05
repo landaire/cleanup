@@ -2,7 +2,7 @@ use atomic::AtomicUsize;
 
 use rayon::{prelude::*, Scope};
 use sha1::{Digest, Sha1};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs;
 use std::io::Result;
 use std::path::PathBuf;
@@ -19,6 +19,10 @@ struct Opt {
     #[structopt(long = "dry")]
     dry: bool,
 
+    /// Symlink duplicates to a single file (oldest file by default)
+    #[structopt(long = "symlink")]
+    symlink: bool,
+
     /// Input directory
     #[structopt(parse(from_os_str))]
     input: PathBuf,
@@ -31,7 +35,7 @@ fn main() -> Result<()> {
     let input = opt.input.clone();
     rayon::scope(|s| {
         s.spawn(|s| {
-            process_directory(input, &deleted_count, opt.dry, s);
+            process_directory(input, &deleted_count, &opt, s);
         });
     });
 
@@ -55,7 +59,7 @@ fn main() -> Result<()> {
 fn process_directory<'a, 'b>(
     dir: PathBuf,
     deleted_file_count: &'a AtomicUsize,
-    is_dry_run: bool,
+    options: &'a Opt,
     scope: &'b Scope<'a>,
 ) {
     let file_sizes: RwLock<HashMap<u64, Vec<&fs::DirEntry>>> = RwLock::new(HashMap::new());
@@ -65,6 +69,7 @@ fn process_directory<'a, 'b>(
         .expect("failed to read dir")
         .map(|entry| entry.expect("failed to read dir entry"))
         .collect();
+
     entries.sort_by(|a, b| {
         let a_metadata = a.metadata().expect("failed to read entry metadata");
         let b_metadata = b.metadata().expect("failed to read entry metadata");
@@ -86,7 +91,7 @@ fn process_directory<'a, 'b>(
         let file_type = entry.file_type().expect("failed to get file type");
         if file_type.is_dir() && !file_type.is_symlink() {
             scope.spawn(move |s| {
-                process_directory(path, deleted_file_count, is_dry_run, s);
+                process_directory(path, deleted_file_count, options, s);
             });
         } else {
             file_sizes
@@ -103,11 +108,9 @@ fn process_directory<'a, 'b>(
         .read()
         .unwrap()
         .par_iter()
-        .filter(|(_size, entries)| {
-            entries.len() > 1
-        })
+        .filter(|(_size, entries)| entries.len() > 1)
         .for_each(|(_size, entries)| {
-            let hashes = RwLock::new(HashSet::new());
+            let mut hashes = HashMap::new();
             for entry in entries {
                 let mut hasher = Sha1::new();
                 let path = entry.path();
@@ -117,16 +120,27 @@ fn process_directory<'a, 'b>(
                 // acquire hash digest in the form of GenericArray,
                 // which in this case ivalent to [u8; 20]
                 let result = hasher.finalize();
-                if hashes.read().unwrap().contains(&result) {
+                if let Some(target_file) = hashes.get(&result) {
                     deleted_file_count.fetch_add(1, atomic::Ordering::Relaxed);
 
-                    if !is_dry_run {
+                    if !options.dry {
                         fs::remove_file(&path).expect("failed to remove file");
+                        #[cfg(unix)]
+                        {
+                            if options.symlink {
+                                std::os::unix::fs::symlink(&target_file, &path).unwrap_or_else(|e| {
+                                    panic!(
+                                        "failed to make a symlink from {:?} to {:?}: {}",
+                                        path, target_file, e
+                                    )
+                                });
+                            }
+                        }
                     } else {
                         eprintln!("{:?} is a duplicate", path);
                     }
                 } else {
-                    hashes.write().unwrap().insert(result);
+                    hashes.insert(result, path);
                 }
             }
         });
